@@ -12,7 +12,7 @@ The Blockchain Attendance Manager is a decentralized application (DApp) that all
 - **Solidity**: For developing the attendance smart contract.
 - **Web3.js**: Enables interaction between the front end and the blockchain.
 - **HTML/CSS**: Provides the user interface for managing attendance.
-- **Ganache/MetaMask**: For running a local blockchain instance and testing with MetaMask.
+- **Ganache**: For running a local blockchain instance and testing with MetaMask.
 
 #### Setup
 1. **Clone the Repository**:
