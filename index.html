@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Attendance Manager</title>
+    <!-- Link to external CSS file -->
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f0f2f5;
+        color: #333;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      h1 {
+        color: #1a73e8;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .card {
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+      h3 {
+        color: #1a73e8;
+        margin-top: 0;
+      }
+      input {
+        padding: 10px;
+        margin: 10px 0;
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      button {
+        padding: 10px 20px;
+        background-color: #1a73e8;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+      button:hover {
+        background-color: #155db1;
+      }
+      #attendanceStatus {
+        margin-top: 10px;
+        font-weight: bold;
+      }
+      .teacher-info {
+        text-align: center;
+        margin-bottom: 20px;
+        font-style: italic;
+      }
+      /* Hide student list by default */
+      #studentListContainer {
+        display: none;
+      }
+      /* Arrow button styling */
+      .toggle-button {
+        background-color: transparent;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        color: #1a73e8;
+      }
+      .toggle-button:focus {
+        outline: none;
+      }
+    </style>
+    <!-- Include Web3.js library -->
+    <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js@1.5.2/dist/web3.min.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Blockchain Attendance Manager</h1>
+      <div class="teacher-info">Teacher: <span id="teacher"></span></div>
+
+      <!-- Register Student Section -->
+      <div class="card">
+        <h3>Register a Student</h3>
+        <input type="text" id="studentName" placeholder="Student Name" />
+        <input type="text" id="studentId" placeholder="Student Address" />
+        <button onclick="addStudent()">Add Student</button>
+      </div>
+
+      <!-- Mark Attendance Section -->
+      <div class="card">
+        <h3>Mark Attendance</h3>
+        <input type="text" id="attendanceId" placeholder="Student ID" />
+        <button onclick="markAttendance()">Mark Attendance</button>
+      </div>
+
+      <!-- Check Attendance Section -->
+      <div class="card">
+        <h3>Check Attendance</h3>
+        <input type="text" id="checkId" placeholder="Student ID" />
+        <button onclick="checkAttendance()">Check Attendance</button>
+        <div id="attendanceStatus"></div>
+      </div>
+
+      <!-- Toggle Student List Button with Arrow -->
+      <div class="card">
+        <h3>
+          Registered Students 
+          <button id="toggleButton" class="toggle-button" onclick="toggleStudentList()">&#9660;</button>
+        </h3>
+        <!-- Student List Section (Hidden by Default) -->
+        <div id="studentListContainer">
+          <ul id="studentList"></ul>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Replace with your correct contract ABI and address from Remix/Ganache
+      const contractABI = [
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_student",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "_name",
+				"type": "string"
+			}
+		],
+		"name": "addStudent",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_student",
+				"type": "address"
+			}
+		],
+		"name": "markAttendance",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_student",
+				"type": "address"
+			}
+		],
+		"name": "removeStudent",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_student",
+				"type": "address"
+			}
+		],
+		"name": "checkAttendance",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getAllStudents",
+		"outputs": [
+			{
+				"internalType": "address[]",
+				"name": "",
+				"type": "address[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_student",
+				"type": "address"
+			}
+		],
+		"name": "getStudentName",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "studentAddresses",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "students",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"internalType": "bool",
+				"name": "isRegistered",
+				"type": "bool"
+			},
+			{
+				"internalType": "bool",
+				"name": "isPresent",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "teacher",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+];
+
+
+      const contractAddress = "0xd9145CCE52D386f254917e481eB44e9943F39138";  // Replace with your contract address
+
+      // Initialize web3 and the contract instance
+      let web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:7545"));
+      let contract = new web3.eth.Contract(contractABI, contractAddress);
+
+ // Fetch and display the teacher's address
+web3.eth.getAccounts().then((accounts) => {
+    console.log("Connected account:", accounts[0]);  // Log the connected account (deployer)
+
+    contract.methods.teacher().call().then((teacher) => {
+        console.log("Teacher address:", teacher);  // Log the fetched teacher address
+        document.getElementById("teacher").innerText = teacher;
+    }).catch((error) => {
+        console.error("Error fetching teacher address:", error);
+    });
+});
+      // Function to add a student
+      function addStudent() {
+    const studentId = document.getElementById("studentId").value;
+    const studentName = document.getElementById("studentName").value;
+
+    if (!studentId || !studentName) {
+        alert("Please enter both the student ID and name.");
+        return;
+    }
+
+    web3.eth.getAccounts().then((accounts) => {
+        contract.methods.addStudent(studentId, studentName).send({ 
+            from: accounts[0],
+            gas: 300000  // Increased gas limit
+        })
+        .then(() => {
+            alert("Student registered successfully!");
+        })
+        .catch((error) => {
+            console.error("Error in registering student:", error);
+            alert("Error in registering student.");
+        });
+    });
+}
+
+
+      // Function to mark attendance
+      function markAttendance() {
+        const attendanceId = document.getElementById("attendanceId").value;
+
+        if (!attendanceId) {
+          alert("Please enter a student ID.");
+          return;
+        }
+
+        web3.eth.getAccounts().then((accounts) => {
+          contract.methods.markAttendance(attendanceId).send({ from: accounts[0] })
+            .then(() => {
+              alert("Attendance marked successfully!");
+            })
+            .catch((error) => {
+              console.error("Error in marking attendance:", error);
+              alert("Error in marking attendance.");
+            });
+        });
+      }
+
+      // Function to check attendance
+      function checkAttendance() {
+        const checkId = document.getElementById("checkId").value;
+
+        if (!checkId) {
+          alert("Please enter a student ID.");
+          return;
+        }
+
+        contract.methods.checkAttendance(checkId).call()
+          .then((status) => {
+            document.getElementById("attendanceStatus").innerText = status
+              ? "Present"
+              : "Absent";
+          })
+          .catch((error) => {
+            console.error("Error in checking attendance:", error);
+            alert("Error in checking attendance.");
+          });
+      }
+
+      // Function to toggle the student list visibility
+      function toggleStudentList() {
+        const studentListContainer = document.getElementById("studentListContainer");
+        const toggleButton = document.getElementById("toggleButton");
+
+        // Toggle visibility of the student list
+        if (studentListContainer.style.display === "none") {
+          studentListContainer.style.display = "block";
+          toggleButton.innerHTML = "&#9650;";  // Change to up arrow
+          fetchStudentList();
+        } else {
+          studentListContainer.style.display = "none";
+          toggleButton.innerHTML = "&#9660;";  // Change to down arrow
+        }
+      }
+
+      // Function to fetch and display the student list
+      function fetchStudentList() {
+        contract.methods.getAllStudents().call()
+          .then((students) => {
+            const studentList = document.getElementById("studentList");
+            studentList.innerHTML = ""; // Clear the list
+
+            students.forEach((studentAddress) => {
+              contract.methods.getStudentName(studentAddress).call().then((name) => {
+                const listItem = document.createElement("li");
+                listItem.textContent = `Name: ${name}, Address: ${studentAddress}`;
+                studentList.appendChild(listItem);
+              }).catch((error) => {
+                console.error("Error fetching student name:", error);
+              });
+            });
+          })
+          .catch((error) => {
+            console.error("Error fetching students:", error);
+          });
+      }
+    </script>
+  </body>
+</html>
